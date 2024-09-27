@@ -1,0 +1,57 @@
+services:
+  proxy:
+    image: traefik:v3.1.2
+    command: --providers.docker
+    ports:
+      - 80:80
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+
+  client:
+    build:
+      context: ./client
+      target: dev
+    labels:
+      traefik.http.routers.client.rule: "Host(`localhost`)"
+      traefik.http.services.client.loadbalancer.server.port: 5173
+    develop:
+      watch:
+        - path: ./client/src
+          action: sync
+          target: /usr/local/app/src
+        - path: ./client/yarn.lock
+          action: rebuild
+
+  api:
+    build:
+      context: ./api
+      target: dev
+    environment:
+      MONGO_URL: mongodb://mongo:27017
+    labels:
+      traefik.http.routers.api.rule: "Host(`localhost`) && PathPrefix(`/api`)"
+      traefik.http.services.api.loadbalancer.server.port: 3000
+    develop:
+      watch:
+        - path: ./api
+          action: sync
+          target: /usr/local/app/src
+          ignore:
+            - node_modules
+            - yarn.lock
+        - path: ./api/yarn.lock
+          action: rebuild
+
+  mongo:
+    image: mongo:7.0.14
+    ports:
+      - 27017:27017
+    volumes: 
+      - ./dev/db:/docker-entrypoint-initdb.d
+    environment:
+      MONGO_INITDB_DATABASE: app
+
+  mongo-express:
+    image: mongo-express:1.0.2
+    labels:
+      traefik.http.routers.db.rule: "Host(`db.localhost`)"

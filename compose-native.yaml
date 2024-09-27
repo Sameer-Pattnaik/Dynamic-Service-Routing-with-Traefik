@@ -1,0 +1,24 @@
+services:
+  proxy:
+    image: traefik:v3.1.2
+    command: --providers.docker --providers.file.filename=/config/traefik-config.yaml --api.insecure
+    ports:
+      - 80:80
+      - 8080:8080
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - ./dev/traefik-config.yaml:/config/traefik-config.yaml
+
+  mongo:
+    image: mongo:7.0.14
+    ports:
+      - 27017:27017
+    volumes: 
+      - ./dev/db:/docker-entrypoint-initdb.d
+    environment:
+      MONGO_INITDB_DATABASE: app
+
+  mongo-express:
+    image: mongo-express:1.0.2
+    labels:
+      traefik.http.routers.db.rule: "Host(`db.localhost`)"
