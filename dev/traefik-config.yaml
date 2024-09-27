@@ -1,0 +1,18 @@
+http:
+  routers:
+    native-api:
+      rule: "Host(`localhost`) && PathPrefix(`/api`)"
+      service: native-api
+    native-client:
+      rule: "Host(`localhost`)"
+      service: native-client
+
+  services:
+    native-api:
+      loadBalancer:
+        servers:
+          - url: "http://host.docker.internal:3000/"
+    native-client:
+      loadBalancer:
+        servers:
+          - url: "http://host.docker.internal:5173/"
